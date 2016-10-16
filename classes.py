@@ -6,12 +6,12 @@ class Demographic:
 class Person:
   #passing in intervals so I can use consistant 
   #random seed across runs
-  def __init__(self, demographic,start_age_interval,end_age_interval):
+  def __init__(self, demographic,start_age_interval,end_age_interval,exercised,socialized):
     self.sex = demographic.sex
     self.start_age = demographic.min_age + start_age_interval
     self.end_age = self.start_age + end_age_interval
-    self.exercised = False
-    self.socialized = False
+    self.exercised = exercised
+    self.socialized = socialized
 
   def __repr__(self):
     return "Sex: " + self.sex + " Age: " + str(self.start_age)

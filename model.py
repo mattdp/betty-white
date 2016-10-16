@@ -13,7 +13,6 @@ import code; code.interact(local=dict(globals(), **locals()))
 
 todo = """
 MAJOR
-sort people by initial QALYs
 chart size fits people ideally
 
 MINOR
@@ -23,6 +22,8 @@ upgrade Python version
 set exercise and socialized distributions in initial condition
 annotate the classes
 tie to presentation in comments
+check out repo and kill extraneous files
+add a README
 eliminate these notes
 """
 
@@ -126,8 +127,12 @@ for x in range (0,people_in_model):
 
   start_age_interval = random.randint(0,demographic.max_age - demographic.min_age)
   end_age_interval = random.randint(1,7)
-  people.append(Person(demographic,start_age_interval,end_age_interval))
+  exercised = random.choice([True,False])
+  socialized = random.choice([True,True,False])
+  person = Person(demographic,start_age_interval,end_age_interval,exercised,socialized)
+  people.append(person)
 
+people = sorted(people, key=Person.qalys)
 results[0] = deepcopy(people)
 
 #snakes help everyone be social!
