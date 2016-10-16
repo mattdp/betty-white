@@ -4,8 +4,8 @@ class Demographic:
     self.__dict__.update(locals())
 
 class Person:
-  #passing in some random numbers since I'm struggling with 
-  #getting the seed to remain constant
+  #passing in intervals so I can use consistant 
+  #random seed across runs
   def __init__(self, demographic,start_age_interval,end_age_interval):
     self.sex = demographic.sex
     self.start_age = demographic.min_age + start_age_interval
