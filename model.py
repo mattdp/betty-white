@@ -13,7 +13,6 @@ import code; code.interact(local=dict(globals(), **locals()))
 
 todo = """
 MAJOR
-make the randomness repeatable, or i'll go crazy when charting
 sort people by initial QALYs
 chart size fits people ideally
 
@@ -27,23 +26,12 @@ tie to presentation in comments
 eliminate these notes
 """
 
-what_graphing = """
-persons stay in same location in array
-want to have it total to:
-  if lost QALYs, the old total (new QALYs in grey, lost in red)
-  if gained QALYs, the new total (old QALYs in grey, gained in green)
-"""
-
-#ASSUMPTION: All FL residents 65 and up retired.
-#ASSUMPTION: Modeling all FL residents under 95 to start model.
-
-
-
 def population_qalys(people):
   return [round(p.qalys(),2) for p in people]
 
-#outputs a hash with two keys
+#outputs a hash with three keys
 #total: the total number of (QALYs after - QALYs before)
+#scaled_total: the above total, scaled up for whole population
 #details: a person by person QALY difference used for graphing
 def compare_populations(before,after):
   output = {"total": 0, "details": []}
@@ -97,6 +85,8 @@ def graph(base_qalys,change):
   plt.draw()
 
 #SOURCE: https://suburbanstats.org/population/how-many-people-live-in-florida
+#ASSUMPTION: All FL residents 65 and up retired.
+#ASSUMPTION: Modeling all FL residents under 95 to start model.
 demographics = [
   Demographic("male",65,66,184668),
   Demographic("male",67,69,259120),
@@ -111,6 +101,12 @@ demographics = [
   Demographic("female",80,84,266334),
   Demographic("female",85,95,249861)]
 
+total_retirees = sum([d.how_many for d in demographics]) #~3.18M
+people_in_model = 318 #It's possible to have 318 bars in a readable histogram
+scale_factor = 10000 #Thus, each person will represent about 10K other people.
+random.seed(1914011105) #For repeatability when charting data
+
+people = []
 results = [0,0,0,0,0]
 def results_guide(index):
   if index == 0: return "base case"
@@ -120,21 +116,9 @@ def results_guide(index):
   if index == 4: return "minus snake deaths"
   return "bad index"
 
-#~3.18M
-total_retirees = sum([d.how_many for d in demographics])
-#Based on graphical testing, it's possible to have 318 bars in a readable histogram
-people_in_model = 318
-#Thus, each person will represent about 10K other people.
-scale_factor = 10000
-#Needed for graphs, haven't looked into why
-
-#For repeatability when charting data
-random.seed(1914011105)
-
 #chance that person fits a given demographic should fit population distribution
 probability_distribution = [1.0*d.how_many/total_retirees for d in demographics]
 
-people = []
 possible_range = np.arange(0, len(demographics))
 for x in range (0,people_in_model):
   which_demographic = np.random.choice(possible_range, p = probability_distribution)
