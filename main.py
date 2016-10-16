@@ -14,24 +14,17 @@ import pylab as P
 # first create a single histogram
 #
 mu, sigma = 200, 25
-x = mu + sigma*P.randn(10000)
-
-# the histogram of the data with histtype='step'
-n, bins, patches = P.hist(x, 1000, normed=1, histtype='stepfilled')
-P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-
-# add a line showing the expected distribution
-y = P.normpdf( bins, mu, sigma)
-l = P.plot(bins, y, 'k--', linewidth=1.5)
-
-P.figure()
 
 x = mu + sigma*P.randn(1000,3)
 
-n, bins, patches = P.hist(x, 250, normed=1, histtype='bar',
-                            color=['crimson', 'burlywood', 'chartreuse'],
-                            label=['Crimson', 'Burlywood', 'Chartreuse'])
+#250 kinda visible, 500 very wispy
+numBars = 350
 
-n, bins, patches = P.hist(x, 250, normed=1, histtype='bar', stacked=True)
+n, bins, patches = P.hist(x, numBars, normed=1, histtype='bar',
+                            color=['crimson', 'burlywood', 'chartreuse'],
+                            label=['Crimson', 'Burlywood', 'Chartreuse'],
+                            edgecolor='None')
+
+n, bins, patches = P.hist(x, numBars, normed=1, histtype='bar', stacked=True, edgecolor='None')
 
 P.show()
