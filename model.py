@@ -7,6 +7,10 @@ from six.moves import zip
 
 todo = """
 MAJOR
+pick up at measuring QALYs across population, one general method 
+  should compare two populations, so can have a before and after group
+    this way stuff like exercise can be toggled
+
 set age in initializer better
 set death dates better
 
@@ -44,6 +48,12 @@ class Person:
 
   def __repr__(self):
     return "Sex: " + self.sex + " Age: " + str(self.start_age)
+
+  def qaly_per_year(self):
+    qaly = 1.0
+    if (self.socialized == False): qaly -= .33 
+    if (self.exercise == False):   qaly -= .1 
+    return qaly
 
 # thanks to "tacaswell" on github!
 # copied from https://gist.github.com/tacaswell/b1a35a27a7d73f7408d2
@@ -114,7 +124,9 @@ for x in range (0,people_in_model):
 
 ages = [ p.start_age for p in people]
 
+print people[0].qaly_per_year()
+
 #test that graphing is working
-values = [ages]
-stack_bar(ax, values, width=1, edgecolor='None')
-plt.show()
+# values = [ages]
+# stack_bar(ax, values, width=1, edgecolor='None')
+# plt.show()
