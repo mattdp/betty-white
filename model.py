@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from classes import Demographic, Person
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -12,11 +13,9 @@ import code; code.interact(local=dict(globals(), **locals()))
 
 todo = """
 MAJOR
-pick up at measuring QALYs across population, one general method 
-  should compare two populations, so can have a before and after group
-    this way stuff like exercise can be toggled
-
 make the randomness repeatable, or i'll go crazy when charting
+sort people by initial QALYs
+chart size fits people ideally
 
 MINOR
 might make sense to make population class for group methods on people
@@ -25,6 +24,7 @@ upgrade Python version
 set exercise and socialized distributions in initial condition
 annotate the classes
 tie to presentation in comments
+eliminate these notes
 """
 
 what_graphing = """
@@ -37,53 +37,19 @@ want to have it total to:
 #ASSUMPTION: All FL residents 65 and up retired.
 #ASSUMPTION: Modeling all FL residents under 95 to start model.
 
-class Demographic:
-  def __init__(self, sex, min_age, max_age,how_many):
-    #super fragile according to SO, but works for this purpose
-    self.__dict__.update(locals())
 
-class Person:
-  def __init__(self, demographic):
-    self.sex = demographic.sex
-    interval = random.randint(0,demographic.max_age - demographic.min_age)
-    self.start_age = demographic.min_age + interval
 
-    self.end_age = self.start_age + random.randint(1,7)
-    self.exercised = False
-    self.socialized = False
-
-  def __repr__(self):
-    return "Sex: " + self.sex + " Age: " + str(self.start_age)
-
-  def qaly_per_year(self):
-    qaly = 1.0
-    if (self.socialized == False): qaly -= .33 
-    if (self.exercised == False):  qaly -= .1 
-    return qaly
-
-  def qalys(self):
-    return self.qaly_per_year() * (self.end_age - self.start_age)
-
-  #works in the order of this presentation, but not generally
-  def set_exercised(self,val):
-    if val == True and self.exercised == False:
-      self.end_age = self.end_age + 1
-    self.exercised = val
-
-  def set_socialized(self,val):
-    self.socialized = val    
-
-  def set_end_age(self,val):
-    self.end_age = val 
+def population_qalys(people):
+  return [round(p.qalys(),2) for p in people]
 
 #outputs a hash with two keys
 #total: the total number of (QALYs after - QALYs before)
 #details: a person by person QALY difference used for graphing
 def compare_populations(before,after):
   output = {"total": 0, "details": []}
+  before_qalys, after_qalys = population_qalys(before), population_qalys(after)
   for i in range (0,len(before)):
-    difference = after[i].qalys() - before[i].qalys()
-    difference = round(difference,2)
+    difference = after_qalys[i] - before_qalys[i]
     output["details"].append(difference)
   output["total"] = round(sum(output["details"]),0)
   output["scaled_total"] = output["total"] * scale_factor
@@ -91,7 +57,7 @@ def compare_populations(before,after):
 
 # thanks to "tacaswell" on github!
 # copied from https://gist.github.com/tacaswell/b1a35a27a7d73f7408d2
-def stack_bar(ax, list_of_vals, color_cyle=None, **kwargs):
+def stack_bar(ax, list_of_vals, second_color_char, **kwargs):
     """
     Generalized stacked bar graph.
     kwargs are passed through to the call to `bar`
@@ -105,11 +71,7 @@ def stack_bar(ax, list_of_vals, color_cyle=None, **kwargs):
        color_cycle is None, defaults
        to `cycle(['r', 'g', 'b', 'k'])`
     """
-    if color_cyle is None:
-        color_cyle = cycle(['r', 'g', 'b', 'k'])
-    else:
-        color_cycle = cycle(color_cycle)
-
+    color_cyle = cycle(['k', second_color_char])
 
     v0 = len(list_of_vals[0])
     if any(v0 != len(v) for v in list_of_vals[1:]):
@@ -120,6 +82,19 @@ def stack_bar(ax, list_of_vals, color_cyle=None, **kwargs):
     for v, c in zip(list_of_vals, color_cyle):
         ax.bar(edges, v, bottom=bottom, color=c, **kwargs)
         bottom += np.asarray(v)
+
+def graph(base_qalys,change):
+  #assumes all changes are positive or negative. goal here
+  #is to show red for losing QALYs and green for gains
+  color_char = 'g'
+  if sum(change) < 0: 
+    color_char = 'r'
+  values = [base_qalys, change]
+
+  #stuff I'm mostly copying without understanding
+  fig, ax = plt.subplots(1, 1)
+  stack_bar(ax, values, color_char, width=1, edgecolor='None')
+  plt.draw()
 
 #SOURCE: https://suburbanstats.org/population/how-many-people-live-in-florida
 demographics = [
@@ -152,7 +127,7 @@ people_in_model = 318
 #Thus, each person will represent about 10K other people.
 scale_factor = 10000
 #Needed for graphs, haven't looked into why
-fig, ax = plt.subplots(1, 1)
+
 #For repeatability when charting data
 random.seed(1914011105)
 
@@ -164,7 +139,10 @@ possible_range = np.arange(0, len(demographics))
 for x in range (0,people_in_model):
   which_demographic = np.random.choice(possible_range, p = probability_distribution)
   demographic = demographics[which_demographic]
-  people.append(Person(demographic))
+
+  start_age_interval = random.randint(0,demographic.max_age - demographic.min_age)
+  end_age_interval = random.randint(1,7)
+  people.append(Person(demographic,start_age_interval,end_age_interval))
 
 results[0] = deepcopy(people)
 
@@ -197,11 +175,8 @@ for p in people:
 
 results[4] = deepcopy(people)
 
-test = compare_populations(results[3],results[4])
+for i in range(0,len(results)-1): #since doing a +1 in body
+  changes = compare_populations(results[i],results[i+1])["details"]
+  graph(population_qalys(results[i]),changes)
 
-print test
-
-#test that graphing is working
-# values = [ages]
-# stack_bar(ax, values, width=1, edgecolor='None')
-# plt.show()
+plt.show()
