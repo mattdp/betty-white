@@ -18,7 +18,7 @@ mu, sigma = 200, 25
 x = mu + sigma*P.randn(1000,3)
 
 #250 kinda visible, 500 very wispy
-numBars = 350
+numBars = 318
 
 n, bins, patches = P.hist(x, numBars, normed=1, histtype='bar',
                             color=['crimson', 'burlywood', 'chartreuse'],
