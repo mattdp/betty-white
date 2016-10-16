@@ -12,14 +12,11 @@ import code; code.interact(local=dict(globals(), **locals()))
 """
 
 todo = """
-MAJOR
-chart size fits people ideally
-
 MINOR
-might make sense to make population class for group methods on people
-consider adding id for people, so can sort them consistently
+floats for age and increase variation
+last figure units off
+
 upgrade Python version
-set exercise and socialized distributions in initial condition
 annotate the classes
 tie to presentation in comments
 check out repo and kill extraneous files
@@ -80,8 +77,12 @@ def graph(base_qalys,change):
     color_char = 'r'
   values = [base_qalys, change]
 
+  plt.ylim(0,10) #magic number based on how high QALYs get
+  plt.xlim(0,people_in_model)
+
   #stuff I'm mostly copying without understanding
   fig, ax = plt.subplots(1, 1)
+  ax.get_xaxis().set_ticks([]) #added
   stack_bar(ax, values, color_char, width=1, edgecolor='None')
   plt.draw()
 
@@ -164,8 +165,22 @@ for p in people:
 
 results[4] = deepcopy(people)
 
+#first, graph the baseline QALYs alone
+changes = compare_populations(results[0],results[0])["details"]
+graph(population_qalys(results[0]),changes)
+
 for i in range(0,len(results)-1): #since doing a +1 in body
   changes = compare_populations(results[i],results[i+1])["details"]
   graph(population_qalys(results[i]),changes)
+  op_string = "Population QALYs for " + results_guide(i) + ": "
+  op_string += str(compare_populations(results[0], results[i]))
+  print op_string
+
+#last, graph the final state alone. yes, this is not DRY
+changes = compare_populations(results[4],results[4])["details"]
+graph(population_qalys(results[4]),changes)
+op_string = "Population QALYs for " + results_guide(4) + ": "
+op_string += str(compare_populations(results[0], results[4]))
+print op_string
 
 plt.show()
