@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import numpy as np
-import pylab as P
+import matplotlib.pyplot as plt
+from itertools import cycle
+from six.moves import zip
 
 #BELOW is step 1, modding example code to see hundreds or
 #thousands of data displayed
