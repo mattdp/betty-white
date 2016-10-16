@@ -2,8 +2,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+from copy import copy, deepcopy
 from itertools import cycle
 from six.moves import zip
+
+pythons_binding_pry = """
+import code; code.interact(local=dict(globals(), **locals()))
+"""
 
 todo = """
 MAJOR
@@ -11,14 +16,15 @@ pick up at measuring QALYs across population, one general method
   should compare two populations, so can have a before and after group
     this way stuff like exercise can be toggled
 
-set age in initializer better
-set death dates better
+make the randomness repeatable, or i'll go crazy when charting
 
 MINOR
 might make sense to make population class for group methods on people
+consider adding id for people, so can sort them consistently
 upgrade Python version
 set exercise and socialized distributions in initial condition
 annotate the classes
+tie to presentation in comments
 """
 
 what_graphing = """
@@ -29,7 +35,7 @@ want to have it total to:
 """
 
 #ASSUMPTION: All FL residents 65 and up retired.
-#ASSUMPTION: Modeling all FL residents under 92 to start model.
+#ASSUMPTION: Modeling all FL residents under 95 to start model.
 
 class Demographic:
   def __init__(self, sex, min_age, max_age,how_many):
@@ -39,11 +45,11 @@ class Demographic:
 class Person:
   def __init__(self, demographic):
     self.sex = demographic.sex
-    self.start_age = demographic.min_age
+    interval = random.randint(0,demographic.max_age - demographic.min_age)
+    self.start_age = demographic.min_age + interval
 
-    self.current_death_age = self.start_age + random.randint(1,7)
-    self.previous_death_age = self.current_death_age
-    self.exercise = False
+    self.end_age = self.start_age + random.randint(1,7)
+    self.exercised = False
     self.socialized = False
 
   def __repr__(self):
@@ -52,8 +58,36 @@ class Person:
   def qaly_per_year(self):
     qaly = 1.0
     if (self.socialized == False): qaly -= .33 
-    if (self.exercise == False):   qaly -= .1 
+    if (self.exercised == False):  qaly -= .1 
     return qaly
+
+  def qalys(self):
+    return self.qaly_per_year() * (self.end_age - self.start_age)
+
+  #works in the order of this presentation, but not generally
+  def set_exercised(self,val):
+    if val == True and self.exercised == False:
+      self.end_age = self.end_age + 1
+    self.exercised = val
+
+  def set_socialized(self,val):
+    self.socialized = val    
+
+  def set_end_age(self,val):
+    self.end_age = val 
+
+#outputs a hash with two keys
+#total: the total number of (QALYs after - QALYs before)
+#details: a person by person QALY difference used for graphing
+def compare_populations(before,after):
+  output = {"total": 0, "details": []}
+  for i in range (0,len(before)):
+    difference = after[i].qalys() - before[i].qalys()
+    difference = round(difference,2)
+    output["details"].append(difference)
+  output["total"] = round(sum(output["details"]),0)
+  output["scaled_total"] = output["total"] * scale_factor
+  return output
 
 # thanks to "tacaswell" on github!
 # copied from https://gist.github.com/tacaswell/b1a35a27a7d73f7408d2
@@ -94,13 +128,22 @@ demographics = [
   Demographic("male",70,74,354152),
   Demographic("male",75,79,276041),
   Demographic("male",80,84,201086),
-  Demographic("male",85,92,150291),
+  Demographic("male",85,95,150291),
   Demographic("female",65,66,210152),
   Demographic("female",67,69,297833),
   Demographic("female",70,74,407016),
   Demographic("female",75,79,329435),
   Demographic("female",80,84,266334),
-  Demographic("female",85,92,249861)]
+  Demographic("female",85,95,249861)]
+
+results = [0,0,0,0,0]
+def results_guide(index):
+  if index == 0: return "base case"
+  if index == 1: return "with socialization"
+  if index == 2: return "with socialization and exercise"
+  if index == 3: return "minus 90 year old male socialization"
+  if index == 4: return "minus snake deaths"
+  return "bad index"
 
 #~3.18M
 total_retirees = sum([d.how_many for d in demographics])
@@ -110,6 +153,8 @@ people_in_model = 318
 scale_factor = 10000
 #Needed for graphs, haven't looked into why
 fig, ax = plt.subplots(1, 1)
+#For repeatability when charting data
+random.seed(1914011105)
 
 #chance that person fits a given demographic should fit population distribution
 probability_distribution = [1.0*d.how_many/total_retirees for d in demographics]
@@ -117,14 +162,44 @@ probability_distribution = [1.0*d.how_many/total_retirees for d in demographics]
 people = []
 possible_range = np.arange(0, len(demographics))
 for x in range (0,people_in_model):
-  #select which demographic the person will be
   which_demographic = np.random.choice(possible_range, p = probability_distribution)
   demographic = demographics[which_demographic]
   people.append(Person(demographic))
 
-ages = [ p.start_age for p in people]
+results[0] = deepcopy(people)
 
-print people[0].qaly_per_year()
+#snakes help everyone be social!
+for p in people:
+  p.set_socialized(True)
+
+results[1] = deepcopy(people)
+
+#snakes help everyone exercise!
+for p in people:
+  p.set_exercised(True)
+
+results[2] = deepcopy(people)
+
+#Presentation says they are fully socialized, so this gives us a
+#correction for falsely giving them social QALYs earlier
+for p in people:
+  if p.sex == "male" and p.start_age >= 90:
+    p.set_socialized(False)
+
+results[3] = deepcopy(people)
+
+#Snakes occasionally kill people :(
+i = 1
+for p in people:
+  if i % 100 == 0:
+    p.set_end_age(p.start_age)
+  i += 1
+
+results[4] = deepcopy(people)
+
+test = compare_populations(results[3],results[4])
+
+print test
 
 #test that graphing is working
 # values = [ages]
