@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from classes import Demographic, Person
+from classes import Demographic, Person, ResultHolder
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -15,6 +15,7 @@ get to final numbers that i like - should be net + at 10/20 percent attrition
 make a one-chart comparison for ups and downs vs initial
   could do with having black/green/red in all charts, and sending all
   negs to red an pos to green
+make axes equal again - topping out at 8 in tests
 
 MINOR
 annotate the classes
@@ -34,7 +35,7 @@ def compare_populations(before,after):
   output = {"total": 0, "details": []}
   before_qalys, after_qalys = population_qalys(before), population_qalys(after)
   for i in range (0,len(before)):
-    difference = after_qalys[i] - before_qalys[i]
+    difference = abs(after_qalys[i] - before_qalys[i])
     output["details"].append(difference)
   output["total"] = round(sum(output["details"]),0)
   output["scaled_total"] = output["total"] * scale_factor
@@ -69,8 +70,15 @@ def stack_bar(ax, list_of_vals, **kwargs):
         bottom += np.asarray(v)
 
 #TODO implement neg_change fully
-def graph(base_qalys,pos_change,neg_change=0):
-  if neg_change == 0: neg_change = pos_change #temp, for intermediate compatibility
+def graph(base_qalys,pos_change,neg_change):
+
+  #curious how to make this DRY. lack of pointers made this hard for me
+  #since iterating on [pos,neg] didn't work out
+  if pos_change == []:
+    pos_change = [0 for b in base_qalys]
+  if neg_change == []:
+    neg_change = [0 for b in base_qalys]
+
   values = [base_qalys, pos_change, neg_change]
 
   plt.ylim(0,max_qalys_for_axis) #magic global number based on how high QALYs get
@@ -79,18 +87,17 @@ def graph(base_qalys,pos_change,neg_change=0):
   #stuff I'm mostly copying without understanding
   fig, ax = plt.subplots(1, 1)
   ax.get_xaxis().set_ticks([]) #added
-  stack_bar(ax, values, width=1)#edgecolor='None')
+  stack_bar(ax, values, width=1, edgecolor='None')
   plt.draw()
 
 people = []
-results = [0,0,0,0,0]
+resultholders = []
 
-def results_guide(index):
+def resultholders_guide(index):
   if index == 0: return "base case"
-  if index == 1: return "with socialization"
-  if index == 2: return "with socialization and exercise"
-  if index == 3: return "minus 90 year old male socialization"
-  if index == 4: return "minus snake deaths"
+  if index == 1: return "with socialization and exercise"
+  if index == 2: return "minus light snake deaths from initial condition"
+  if index == 3: return "minus heavy snake deaths from initial condition"
   return "bad index"
 
 #SOURCE: https://suburbanstats.org/population/how-many-people-live-in-florida
@@ -132,53 +139,56 @@ for x in range (0,people_in_model):
   people.append(person)
 
 people = sorted(people, key=Person.qalys)
-results[0] = deepcopy(people)
 
-#snakes help everyone be social!
+#0: initial condition
+resultholders.append(ResultHolder(people,[],[]))
+graph(population_qalys(people),[],[])
+
+#1: snakes help everyone be social and exercise!
 for p in people:
   p.set_socialized(True)
-
-results[1] = deepcopy(people)
-
-#snakes help everyone exercise!
-for p in people:
   p.set_exercised(True)
 
-results[2] = deepcopy(people)
+#only positive changes, no negatives yet
+pos_changes = compare_populations(resultholders[0].people,people)["details"]
+newbie = ResultHolder(people,pos_changes,[])
+graph(population_qalys(resultholders[0].people),pos_changes,[])
+resultholders.append(newbie)
 
-#Presentation says they are fully socialized, so this gives us a
-#correction for falsely giving them social QALYs earlier
-for p in people:
-  if p.sex == "male" and p.start_age >= 90:
-    p.set_socialized(False)
+#set people to initial people, since we want negs related to initial
+#condition, not off giving more QALYs then taking all away
+people = deepcopy(resultholders[0].people) 
 
-results[3] = deepcopy(people)
-
-#Snakes occasionally kill people :(
-i = 1
+#2: snakes occasionally kill people :(
+i = 1 #don't kill the first one
 for p in people:
   if i % 100 == 0:
     p.set_end_age(p.start_age)
   i += 1
 
-results[4] = deepcopy(people)
+neg_changes = compare_populations(resultholders[0].people,people)["details"]
+#for people with negative changes, we don't want any green on graph
+for n in range(0,len(neg_changes)):
+  if neg_changes[n] != 0: pos_changes[n] = 0
 
-#first, graph the baseline QALYs alone
-changes = compare_populations(results[0],results[0])["details"]
-graph(population_qalys(results[0]),changes)
+newbie = ResultHolder(people,pos_changes,neg_changes)
+graph(population_qalys(people),pos_changes,neg_changes)
+resultholders.append(newbie)
 
-for i in range(0,len(results)-1): #since doing a +1 in body
-  changes = compare_populations(results[i],results[i+1])["details"]
-  graph(population_qalys(results[i]),changes)
-  op_string = "Population QALYs for " + results_guide(i) + ": "
-  op_string += str(compare_populations(results[0], results[i]))
-  print op_string
+#snakes non-occasionally kill people :(
+i = 1 #don't kill the first one
+for p in people:
+  if i % 10 == 0: #make sure this includes the divisor from earlier
+    p.set_end_age(p.start_age)
+  i += 1
 
-#last, graph the final state alone. yes, this is not DRY
-changes = compare_populations(results[4],results[4])["details"]
-graph(population_qalys(results[4]),changes)
-op_string = "Population QALYs for " + results_guide(4) + ": "
-op_string += str(compare_populations(results[0], results[4]))
-print op_string
+neg_changes = compare_populations(resultholders[0].people,people)["details"]
+#for people with negative changes, we don't want any green on graph
+for n in range(0,len(neg_changes)):
+  if neg_changes[n] != 0: pos_changes[n] = 0
+
+newbie = ResultHolder(people,pos_changes,neg_changes)
+graph(population_qalys(people),pos_changes,neg_changes)
+resultholders.append(newbie)
 
 plt.show()

@@ -1,3 +1,12 @@
+from copy import copy, deepcopy
+
+#snapshot of moment in time in model
+class ResultHolder:
+  def __init__(self,people,pos_changes,neg_changes):
+    self.people = deepcopy(people)
+    self.pos_changes = deepcopy(pos_changes)
+    self.neg_changes = deepcopy(neg_changes)
+
 class Demographic:
   def __init__(self, sex, min_age, max_age,how_many):
     #super fragile according to SO, but works for this purpose
