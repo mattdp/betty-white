@@ -7,18 +7,17 @@ from copy import copy, deepcopy
 from itertools import cycle
 from six.moves import zip
 
-pythons_binding_pry = """
-import code; code.interact(local=dict(globals(), **locals()))
-"""
+#For a BAHfest 2016 speech - goal is a credible presentation on false, silly idea
 
 todo = """
-MINOR
-floats for age and increase variation
-last figure units off
+MAJOR
+get to final numbers that i like - should be net + at 10/20 percent attrition
+make a one-chart comparison for ups and downs vs initial
+  could do with having black/green/red in all charts, and sending all
+  negs to red an pos to green
 
-upgrade Python version
+MINOR
 annotate the classes
-tie to presentation in comments
 check out repo and kill extraneous files
 add a README
 eliminate these notes
@@ -43,7 +42,7 @@ def compare_populations(before,after):
 
 # thanks to "tacaswell" on github!
 # copied from https://gist.github.com/tacaswell/b1a35a27a7d73f7408d2
-def stack_bar(ax, list_of_vals, second_color_char, **kwargs):
+def stack_bar(ax, list_of_vals, **kwargs):
     """
     Generalized stacked bar graph.
     kwargs are passed through to the call to `bar`
@@ -57,7 +56,7 @@ def stack_bar(ax, list_of_vals, second_color_char, **kwargs):
        color_cycle is None, defaults
        to `cycle(['r', 'g', 'b', 'k'])`
     """
-    color_cyle = cycle(['k', second_color_char])
+    color_cyle = cycle(['b', 'g', 'r']) #blue, green, red
 
     v0 = len(list_of_vals[0])
     if any(v0 != len(v) for v in list_of_vals[1:]):
@@ -69,22 +68,30 @@ def stack_bar(ax, list_of_vals, second_color_char, **kwargs):
         ax.bar(edges, v, bottom=bottom, color=c, **kwargs)
         bottom += np.asarray(v)
 
-def graph(base_qalys,change):
-  #assumes all changes are positive or negative. goal here
-  #is to show red for losing QALYs and green for gains
-  color_char = 'g'
-  if sum(change) < 0: 
-    color_char = 'r'
-  values = [base_qalys, change]
+#TODO implement neg_change fully
+def graph(base_qalys,pos_change,neg_change=0):
+  if neg_change == 0: neg_change = pos_change #temp, for intermediate compatibility
+  values = [base_qalys, pos_change, neg_change]
 
-  plt.ylim(0,10) #magic number based on how high QALYs get
-  plt.xlim(0,people_in_model)
+  plt.ylim(0,max_qalys_for_axis) #magic global number based on how high QALYs get
+  plt.xlim(0,len(base_qalys))
 
   #stuff I'm mostly copying without understanding
   fig, ax = plt.subplots(1, 1)
   ax.get_xaxis().set_ticks([]) #added
-  stack_bar(ax, values, color_char, width=1, edgecolor='None')
+  stack_bar(ax, values, width=1)#edgecolor='None')
   plt.draw()
+
+people = []
+results = [0,0,0,0,0]
+
+def results_guide(index):
+  if index == 0: return "base case"
+  if index == 1: return "with socialization"
+  if index == 2: return "with socialization and exercise"
+  if index == 3: return "minus 90 year old male socialization"
+  if index == 4: return "minus snake deaths"
+  return "bad index"
 
 #SOURCE: https://suburbanstats.org/population/how-many-people-live-in-florida
 #ASSUMPTION: All FL residents 65 and up retired.
@@ -107,16 +114,7 @@ total_retirees = sum([d.how_many for d in demographics]) #~3.18M
 people_in_model = 318 #It's possible to have 318 bars in a readable histogram
 scale_factor = 10000 #Thus, each person will represent about 10K other people.
 random.seed(1914011105) #For repeatability when charting data
-
-people = []
-results = [0,0,0,0,0]
-def results_guide(index):
-  if index == 0: return "base case"
-  if index == 1: return "with socialization"
-  if index == 2: return "with socialization and exercise"
-  if index == 3: return "minus 90 year old male socialization"
-  if index == 4: return "minus snake deaths"
-  return "bad index"
+max_qalys_for_axis = 10 #Set max y of charts manually so scale same in each
 
 #chance that person fits a given demographic should fit population distribution
 probability_distribution = [1.0*d.how_many/total_retirees for d in demographics]
