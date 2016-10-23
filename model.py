@@ -131,8 +131,8 @@ for x in range (0,people_in_model):
   which_demographic = np.random.choice(possible_range, p = probability_distribution)
   demographic = demographics[which_demographic]
 
-  start_age_interval = random.randint(0,demographic.max_age - demographic.min_age)
-  end_age_interval = random.randint(1,7)
+  start_age_interval = random.uniform(0,demographic.max_age - demographic.min_age)
+  end_age_interval = random.uniform(1,8)
   exercised = random.choice([True,False])
   socialized = random.choice([True,True,False])
   person = Person(demographic,start_age_interval,end_age_interval,exercised,socialized)
@@ -191,6 +191,10 @@ newbie = ResultHolder(people,pos_changes,neg_changes)
 graph(population_qalys(people),pos_changes,neg_changes)
 resultholders.append(newbie)
 
+#mysteriously, the last graph has axis problems. hence the duplicate
+graph(population_qalys(people),pos_changes,neg_changes)
+
+print sum(population_qalys(resultholders[0].people)) * scale_factor
 for r in resultholders:
   print (sum(r.pos_changes) - sum(r.neg_changes)) * scale_factor
 
