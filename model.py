@@ -9,21 +9,6 @@ from six.moves import zip
 
 #For a BAHfest 2016 speech - goal is a credible presentation on false, silly idea
 
-todo = """
-MAJOR
-get to final numbers that i like - should be net + at 10/20 percent attrition
-make a one-chart comparison for ups and downs vs initial
-  could do with having black/green/red in all charts, and sending all
-  negs to red an pos to green
-make axes equal again - topping out at 8 in tests
-
-MINOR
-annotate the classes
-check out repo and kill extraneous files
-add a README
-eliminate these notes
-"""
-
 def population_qalys(people):
   return [round(p.qalys(),2) for p in people]
 
