@@ -175,10 +175,10 @@ newbie = ResultHolder(people,pos_changes,neg_changes)
 graph(population_qalys(people),pos_changes,neg_changes)
 resultholders.append(newbie)
 
-#snakes non-occasionally kill people :(
+#3: snakes non-occasionally kill people :(
 i = 1 #don't kill the first one
 for p in people:
-  if i % 10 == 0: #make sure this includes the divisor from earlier
+  if i % 5 == 0: #make sure this includes the divisor from earlier
     p.set_end_age(p.start_age)
   i += 1
 
@@ -190,5 +190,8 @@ for n in range(0,len(neg_changes)):
 newbie = ResultHolder(people,pos_changes,neg_changes)
 graph(population_qalys(people),pos_changes,neg_changes)
 resultholders.append(newbie)
+
+for r in resultholders:
+  print (sum(r.pos_changes) - sum(r.neg_changes)) * scale_factor
 
 plt.show()
